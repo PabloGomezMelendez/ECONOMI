@@ -10,7 +10,3 @@ Repositorio central del proyecto ECONOMI. Contiene documentación técnica, scri
 - `diagrams/` – Diagramas técnicos
 - `changelog/` – Historial de cambios
 
-## 📌 Convención de nombres de ramas
-
-Todas las ramas deben seguir esta estructura:
-
