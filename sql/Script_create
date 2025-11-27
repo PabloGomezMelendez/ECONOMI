@@ -1,0 +1,129 @@
+
+-- Script para borrar las tablas si existen y crearlas nuevamente
+-- ===========================================
+IF OBJECT_ID('T_TRANSACCIONES', 'U') IS NOT NULL DROP TABLE T_TRANSACCIONES;
+IF OBJECT_ID('T_CATEGORIA', 'U') IS NOT NULL DROP TABLE T_CATEGORIA;
+IF OBJECT_ID('T_USUARIO', 'U') IS NOT NULL DROP TABLE T_USUARIO;
+IF OBJECT_ID('T_OBJETIVOS_AHORRO', 'U') IS NOT NULL DROP TABLE T_OBJETIVOS_AHORRO;
+IF OBJECT_ID('T_SIMULACIONES', 'U') IS NOT NULL DROP TABLE T_SIMULACIONES;
+-- ===========================================
+-- Tabla: Usuarios
+-- Contiene la información básica de los usuarios registrados
+-- ===========================================
+CREATE TABLE T_USUARIO (
+    user_id INT IDENTITY(1,1) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    registration_date DATETIME DEFAULT GETDATE()
+);
+
+-- ===========================================
+-- Tabla: Categorias
+-- Define las categorías para ingresos y gastos
+CREATE TABLE T_CATEGORIA (
+    id_categoria INT IDENTITY(1,1) PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('ingreso', 'gasto')),
+    descripcion VARCHAR(MAX)
+);
+
+-- ===========================================
+-- Tabla: Transacciones
+-- Registra cada ingreso o gasto realizado por el usuario
+CREATE TABLE T_TRANSACCIONES (
+    id_transaccion INT IDENTITY(1,1) PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    id_categoria INT NOT NULL,
+    cantidad DECIMAL(10,2) NOT NULL,
+    fecha DATE NOT NULL,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('ingreso', 'gasto')),
+    descripcion VARCHAR(MAX),
+    FOREIGN KEY (id_usuario) REFERENCES T_USUARIO(user_id) ON DELETE CASCADE,
+    FOREIGN KEY (id_categoria) REFERENCES T_CATEGORIA(id_categoria) ON DELETE CASCADE
+);
+
+
+-- ===========================================
+-- Tabla: Objetivos_Ahorro
+CREATE TABLE T_OBJETIVOS_AHORRO (
+    id_objetivo INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    monto_objetivo DECIMAL(10,2) NOT NULL,
+    fecha_limite DATE,
+    estado VARCHAR(20) NOT NULL DEFAULT 'pendiente' CHECK (estado IN ('pendiente', 'completado')),
+    FOREIGN KEY (user_id) REFERENCES T_USUARIO(user_id) ON DELETE CASCADE
+);
+
+-- ===========================================
+CREATE TABLE T_SIMULACIONES (
+    id_simulacion INT IDENTITY(1,1) PRIMARY KEY,
+    user_id INT NOT NULL,
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('ahorro', 'inversión')),
+    parametros NVARCHAR(MAX),
+    resultado DECIMAL(10,2),
+    fecha DATETIME DEFAULT GETDATE(),
+    FOREIGN KEY (user_id) REFERENCES T_USUARIO(user_id) ON DELETE CASCADE
+);
+
+
+-- ===========================================
+-- Relaciones:
+-- Usuarios 1:N Transacciones
+-- Usuarios 1:N Objetivos_Ahorro
+-- Usuarios 1:N Simulaciones
+-- Categorias 1:N Transacciones
+-- ===========================================
+
+-- Índices para optimizar consultas frecuentes
+CREATE INDEX IDX_Transacciones_UserID ON T_TRANSACCIONES(id_usuario);
+CREATE INDEX IDX_Objetivos_UserID ON T_OBJETIVOS_AHORRO(user_id);
+CREATE INDEX IDX_Simulaciones_UserID ON T_SIMULACIONES(user_id);
+
+-- ===========================================
+-- Contenido inicial para categorías comunes
+INSERT INTO T_CATEGORIA (nombre, tipo, descripcion) VALUES
+('Salario', 'ingreso', 'Ingresos por salario mensual'),
+('Venta', 'ingreso', 'Ingresos por ventas o servicios'),
+('Alquiler', 'gasto', 'Gastos de alquiler de vivienda'),
+('Comida', 'gasto', 'Gastos en alimentos y restaurantes'),
+('Transporte', 'gasto', 'Gastos en transporte y movilidad'),
+('Entretenimiento', 'gasto', 'Gastos en ocio y entretenimiento'),
+('Salud', 'gasto', 'Gastos médicos y de salud'),
+('Educación', 'gasto', 'Gastos en educación y formación'),
+('Servicios Públicos', 'gasto', 'Gastos en servicios como agua, luz, internet'),
+('Ahorro', 'gasto', 'Dinero destinado al ahorro'),
+('Inversión', 'gasto', 'Dinero destinado a inversiones financieras'),
+('Otros Ingresos', 'ingreso', 'Otros tipos de ingresos'),
+('Otros Gastos', 'gasto', 'Otros tipos de gastos');
+
+-- Contenido inicial para usuarios de prueba
+INSERT INTO T_USUARIO (name, email, password) VALUES
+('Juan Perez', 'juan.perez@example.com', 'password123'),
+('Maria Gomez', 'maria.gomez@example.com', 'password456'),
+('Carlos Lopez', 'carlos.lopez@example.com', 'password789');
+
+-- Contenido inicial para transacciones de prueba
+INSERT INTO T_TRANSACCIONES (id_usuario, id_categoria, cantidad, fecha, tipo, descripcion) VALUES
+(1, 1, 3000.00, '2024-01-05', 'ingreso', 'Salario mensual de enero'),
+(1, 4, 500.00, '2024-01-10', 'gasto', 'Pago de alquiler de enero'),
+(2, 2, 1500.00, '2024-01-07', 'ingreso', 'Venta de productos'),
+(2, 6, 200.00, '2024-01-15', 'gasto', 'Salida al cine'),
+(3, 1, 3200.00, '2024-01-03', 'ingreso', 'Salario mensual de enero'),
+(3, 5, 100.00, '2024-01-12', 'gasto', 'Gastos en transporte');
+
+-- Contenido inicial para objetivos de ahorro de prueba
+INSERT INTO T_OBJETIVOS_AHORRO (user_id, nombre, monto_objetivo, fecha_limite, estado) VALUES
+(1, 'Vacaciones en la playa', 1500.00, '2024-06-30', 'pendiente'),
+(2, 'Nuevo portátil', 1200.00, '2024-05-15', 'pendiente'),
+(3, 'Fondo de emergencia', 5000.00, '2024-12-31', 'pendiente');
+
+-- Contenido inicial para simulaciones de prueba
+INSERT INTO T_SIMULACIONES (user_id, tipo, parametros, resultado) VALUES
+(1, 'ahorro', '{"monto_mensual": 200, "meses": 12}', 2400.00),
+(2, 'inversión', '{"monto_inicial": 1000, "tasa_interes": 5, "años": 3}', 1157.63),
+(3, 'ahorro', '{"monto_mensual": 300, "meses": 6}', 1800.00);
+
+
+-- Fin del script
